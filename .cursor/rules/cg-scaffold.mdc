@@ -1,0 +1,13 @@
+---
+description: Scaffold CG — POO, loop GLFW, deps; proibido Pygame
+globs: main.py,requirements.txt,app/**/*.py,world/__init__.py
+alwaysApply: false
+---
+
+# Scaffold Oficina Arena
+
+- Stack: Python + OpenGL 3.3 core + GLFW + PyGLM + NumPy. Sem Pygame.
+- Pacotes: `app/` (janela/input), `gfx/` (GL), `scene/` (oficina), `world/` (IA reusada).
+- Reuso só de `world/core` + `world/ia` (+ `world/config.py`). Não alterar lógica de decisão.
+- `world/__init__.py` coloca `world/` no `sys.path` para imports `config`/`core`/`ia`.
+- Menos código: sem wrappers “para depois”, sem menu GUI complexo.

@@ -1,0 +1,13 @@
+---
+description: Interação — catálogo, fantasma, teclado/mouse
+globs: app/**/*.py,scene/catalog.py,scene/placeable.py,scene/workshop.py
+alwaysApply: false
+---
+
+# Interação
+
+- Edição só com `workshop.editing` True (simulação pausada).
+- Fantasma: verde se `can_place`, vermelho senão; clique/`Enter` confirma; `Esc` cancela.
+- Controles: setas/`[]` catálogo; `Q`/`E` rotação; `+/-` escala; `Delete` remove; `G` novo fantasma.
+- Picking: ray no plano Y=0 a partir da câmera.
+- Sem menus de botões complexos — título da janela mostra estado.

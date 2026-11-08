@@ -1,0 +1,13 @@
+---
+description: Bridge IA — grade ↔ core/ia, turnos dos robôs
+globs: world/**/*.py
+alwaysApply: false
+---
+
+# Integração IA (PP01)
+
+- `WorldBridge` cria `Partida` e espelha paredes/minérios colocados na cena.
+- Render só lê `posicao` dos agentes; não decide rota.
+- `P`/`Espaço` inicia/pausa; `R` reinicia; `Tab` troca robô seguido.
+- Não editar heurísticas/Minimax/BC salvo bug que quebre a ponte.
+- Imports PP01: ativar `import world` antes de `core`/`ia`.

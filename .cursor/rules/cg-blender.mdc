@@ -1,0 +1,15 @@
+---
+description: Pipeline Blender — escala, eixos, export OBJ/PNG low-poly
+globs: assets/blender/**/*,assets/models/**/*,assets/textures/**/*
+alwaysApply: false
+---
+
+# Blender → OpenGL
+
+- Fonte: `assets/blender/*.blend`. Runtime: `assets/models/<id>.obj` + texturas PNG opcionais.
+- Escala: 1 unidade = 1 célula; origem no centro da base (Y=0 no app após conversão).
+- Export: normals + UVs + triangulate; Forward -Y / Up Z (ver `assets/blender/EXPORT.md`).
+- IDs = catálogo: bancada, cadeira, luminaria, abajur, planta, minerio, estante, base, robo.
+- Batch: `blender --background --python assets/blender/export_catalog.py`
+- Fallback: `gen_placeholder_obj.py` se Blender indisponível.
+- Loader converte Z-up Blender → Y-up OpenGL. Não inventar glTF/FBX neste MVP.

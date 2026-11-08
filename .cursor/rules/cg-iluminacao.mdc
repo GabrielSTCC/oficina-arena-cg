@@ -1,0 +1,13 @@
+---
+description: Iluminação Phong — shaders, materiais, luzes
+globs: gfx/shader.py,gfx/shaders/**/*,gfx/mesh.py
+alwaysApply: false
+---
+
+# Iluminação e materiais
+
+- Phong em `gfx/shaders/phong.frag`: ambiente + difusa + especular.
+- Luz direcional (janela) sempre; até 4 pontuais das luminárias/abajures colocados.
+- Materiais: madeira (Ks baixo), metal (Ks alto), fosco, minério (Ks alto).
+- Textura opcional (`uUseTexture`); MVP pode usar só Kd.
+- Não usar fixed-function OpenGL legado.

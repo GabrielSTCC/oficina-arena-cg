@@ -1,0 +1,13 @@
+---
+description: Modelagem — MeshLoader, catálogo, transformações, placeholders
+globs: scene/**/*.py,gfx/mesh*.py,gfx/primitives.py
+alwaysApply: false
+---
+
+# Modelagem e transformações
+
+- Catálogo 5–8 itens em `scene/catalog.py`; cada um define `CellKind` na grade.
+- `Placeable` guarda célula, yaw, escala; `model_matrix` via PyGLM.
+- Sem OBJ → `make_box` placeholder com o mesmo material.
+- Restrições: célula ocupada / fora da grade = fantasma vermelho.
+- Galpão fechado (chão, 4 paredes, teto) em `Workshop.draw_static`.

@@ -1,0 +1,12 @@
+---
+description: Câmera — planta ortogonal, orbital, seguir robô
+globs: gfx/camera.py
+alwaysApply: false
+---
+
+# Câmera
+
+- Três modos em `CameraMode`: PLANTA (ortho), ORBITAL (persp + mouse), SEGUIR (atrás do robô).
+- Teclas: `C` cicla; `1`/`2`/`3` escolhe; scroll zoom; botão direito arrasta orbital.
+- Matrizes PyGLM → uniforms `uView`/`uProj`; `uViewPos` para Phong.
+- Não misturar lógica da arena na câmera — só ler `follow_pos`.

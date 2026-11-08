@@ -1,0 +1,13 @@
+---
+description: Entrega — docs Sprint 2/3, SIGAA, vídeo, não inflar escopo
+globs: docs/**/*,README.md
+alwaysApply: false
+---
+
+# Entrega
+
+- Manter `docs/SPRINT2_PROTOTIPO.md` e `docs/SPRINT3_PREVIA.md` alinhados ao que roda.
+- README: como instalar, controles, reexport Blender.
+- SIGAA: código-fonte anexo (não só GitHub); assets grandes podem ser link.
+- Vídeo curto mostrando: cena, fantasma, câmeras, luz, robôs.
+- Não expandir para sprint final (01/12) sem pedido explícito.
