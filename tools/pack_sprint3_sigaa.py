@@ -64,6 +64,11 @@ def main() -> None:
         encoding="utf-8",
     )
     full_zip, light_zip = OUT / f"{FULL}.zip", OUT / f"{LIGHT}.zip"
+    # PDF entregavel tambem na raiz dos pacotes
+    pdf = ROOT / "docs" / "SPRINT3_VERSAO_PREVIA.pdf"
+    if pdf.is_file():
+        for d in (full_dir, light_dir):
+            shutil.copy2(pdf, d / pdf.name)
     make_zip(full_dir, full_zip)
     make_zip(light_dir, light_zip)
     full_mb = full_zip.stat().st_size / (1024 * 1024)

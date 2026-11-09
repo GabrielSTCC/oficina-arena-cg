@@ -7,7 +7,7 @@
 
 1. **Código-fonte** — recomendado no SIGAA: `dist/oficina-arena-sprint3-codigo-docs.zip` (~15 MiB; sem NPZ/glTF/texturas).  
    Há também `dist/oficina-arena-sprint3.zip` (~197 MiB, jogo completo) se o limite do SIGAA permitir.
-2. **Documento PDF único:** [`SPRINT3_VERSAO_PREVIA.pdf`](SPRINT3_VERSAO_PREVIA.pdf) — capa + relatório da versão prévia (também dentro do ZIP).
+2. **Documento PDF único:** `SPRINT3_VERSAO_PREVIA.pdf` — capa + relatório (na **raiz** do ZIP e em `docs/`).
 3. **Link do repositório** (assets grandes / clone completo):  
    https://github.com/GabrielSTCC/oficina-arena-cg
 

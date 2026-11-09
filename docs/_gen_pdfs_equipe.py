@@ -12,6 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent
 FAC = Path(__file__).resolve().parents[3] / "docs"
+UFC_LOGO = ROOT / "assets_doc" / "ufc_logo.png"
 
 
 def ascii_fold(s: str) -> str:
@@ -110,13 +111,20 @@ def gen_capa_png() -> Path:
         tw = bbox[2] - bbox[0]
         d.text(((w - tw) // 2, y), text, font=f, fill=(0, 0, 0))
 
-    center(220, "UNIVERSIDADE FEDERAL DO CEARÁ", _font(36, True))
-    center(280, "CAMPUS DE RUSSAS", _font(28))
-    center(330, "CURSO DE CIÊNCIA DA COMPUTAÇÃO", _font(28))
-    center(560, "GABRIEL SANTOS TEIXEIRA — Matrícula 515128", _font(26, True))
-    center(620, "ELOI TELES DE MORAIS NETO — Matrícula 514502", _font(26, True))
-    center(900, "OFICINA COSY DA ARENA DE MINERAÇÃO", _font(34, True))
-    center(980, "Versão prévia (Sprint 3)", _font(28))
+    if UFC_LOGO.is_file():
+        logo = Image.open(UFC_LOGO).convert("RGBA")
+        lw = 220
+        lh = int(logo.height * (lw / logo.width))
+        logo = logo.resize((lw, lh), Image.Resampling.LANCZOS)
+        img.paste(logo, ((w - lw) // 2, 80), logo)
+
+    center(340, "UNIVERSIDADE FEDERAL DO CEARÁ", _font(36, True))
+    center(400, "CAMPUS DE RUSSAS", _font(28))
+    center(450, "CURSO DE CIÊNCIA DA COMPUTAÇÃO", _font(28))
+    center(640, "GABRIEL SANTOS TEIXEIRA — Matrícula 515128", _font(26, True))
+    center(700, "ELOI TELES DE MORAIS NETO — Matrícula 514502", _font(26, True))
+    center(960, "OFICINA COSY DA ARENA DE MINERAÇÃO", _font(34, True))
+    center(1040, "Versão prévia (Sprint 3)", _font(28))
     center(1500, "RUSSAS", _font(28))
     center(1560, "2026", _font(28))
     out = ROOT / "CAPA_SPRINT3.png"
@@ -187,7 +195,17 @@ def _draw_capa_page(pdf: FPDF) -> None:
         pdf.set_font("Helvetica", "B" if bold else "", size)
         pdf.cell(0, h, txt, align="C", new_x="LMARGIN", new_y="NEXT")
 
-    pdf.ln(30)
+    if UFC_LOGO.is_file():
+        logo_w_mm = 32.0
+        # proporcao aproximada do brasao
+        with Image.open(UFC_LOGO) as im:
+            logo_h_mm = logo_w_mm * (im.height / im.width)
+        x = (210.0 - logo_w_mm) / 2.0
+        pdf.image(str(UFC_LOGO), x=x, y=18.0, w=logo_w_mm, h=logo_h_mm)
+        pdf.set_y(18.0 + logo_h_mm + 8.0)
+    else:
+        pdf.ln(30)
+
     line("UNIVERSIDADE FEDERAL DO CEARA", size=14, bold=True)
     pdf.ln(4)
     line("CAMPUS DE RUSSAS", size=12)
