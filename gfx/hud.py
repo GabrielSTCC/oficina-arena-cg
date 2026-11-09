@@ -70,6 +70,7 @@ CONFIG_ROWS: list[tuple[str, str, int]] = [
 
 
 class AppState(Enum):
+    TUTORIAL = "tutorial"
     MENU_PRINCIPAL = "menu_principal"
     MENU_CONFIG = "menu_config"
     SELECAO_ROBO = "selecao_robo"
@@ -317,8 +318,71 @@ class HudOverlay:
     # Telas de Menu (Principal, Configurações, Modos e Moeda)
     # ------------------------------------------------------------------
 
+    def _draw_tutorial(self, draw: ImageDraw.ImageDraw) -> None:
+        pw = min(720, self.width - 40)
+        ph = min(520, self.height - 40)
+        x0 = (self.width - pw) // 2
+        y0 = (self.height - ph) // 2
+        draw.rounded_rectangle(
+            [x0, y0, x0 + pw, y0 + ph],
+            radius=14,
+            fill=(10, 15, 25, 235),
+            outline=(58, 222, 255, 240),
+            width=2,
+        )
+        mx = x0 + pw // 2
+        draw.text(
+            (mx, y0 + 18),
+            "COMO JOGAR",
+            font=self._font_hero,
+            fill=(58, 222, 255, 255),
+            anchor="ma",
+        )
+        draw.text(
+            (mx, y0 + 48),
+            "Oficina Arena — tutorial rapido",
+            font=self._font_body,
+            fill=(175, 195, 220, 240),
+            anchor="ma",
+        )
+
+        lines = [
+            ("Objetivo", "Colete minerios, leve ate a sua base e marque mais pontos que o rival."),
+            ("Turnos", "Alfa e Beta se alternam. Em cada turno o robo anda 1 celula na grade."),
+            ("Bateria", "Andar gasta energia (armadilha custa o dobro). Na base: entrega e recarrega."),
+            ("Pontos", "Valor do minerio ao coletar + bonus ao descarregar a carga na base."),
+            ("Fluxo", "Iniciar → escolher robo → modo → moeda → partida."),
+            ("Controles", "P pausa · R reinicia · 1/2/3 cameras · mouse orbita (botao direito)."),
+            ("Edicao", "Antes/durante a pausa: catalogo, Q/E rotacao, +/- escala, Delete remove."),
+        ]
+        ty = y0 + 78
+        lx = x0 + 28
+        for title, body in lines:
+            draw.text((lx, ty), title, font=self._font_title, fill=(255, 210, 90, 255))
+            draw.text((lx + 128, ty + 2), body, font=self._font_small, fill=(210, 225, 240, 245))
+            ty += 42
+
+        bw, bh = min(280, pw - 72), 52
+        bx = x0 + (pw - bw) // 2
+        by = y0 + ph - 78
+        self._draw_button(
+            draw,
+            "tutorial_continuar",
+            (bx, by, bx + bw, by + bh),
+            "CONTINUAR",
+            selected=True,
+            accent=(58, 222, 255, 255),
+        )
+        draw.text(
+            (mx, y0 + ph - 18),
+            "Enter / Espaco / clique em Continuar",
+            font=self._font_small,
+            fill=(145, 165, 192, 230),
+            anchor="ma",
+        )
+
     def _draw_menu_principal(self, draw: ImageDraw.ImageDraw) -> None:
-        pw, ph = min(560, self.width - 40), 400
+        pw, ph = min(560, self.width - 40), 470
         x0 = (self.width - pw) // 2
         y0 = (self.height - ph) // 2
         draw.rounded_rectangle(
@@ -353,20 +417,21 @@ class HudOverlay:
 
         items = [
             ("menu_iniciar", "INICIAR JOGO", (58, 222, 255, 255)),
+            ("menu_tutorial", "COMO JOGAR", (120, 220, 160, 255)),
             ("menu_config", "CONFIGURACOES", (255, 190, 64, 255)),
             ("menu_sair", "SAIR", (255, 92, 82, 255)),
         ]
         bw = pw - 72
-        bh = 54
+        bh = 50
         bx = x0 + 36
         for i, (act, lbl, acc) in enumerate(items):
-            by = y0 + 120 + i * 70
+            by = y0 + 118 + i * 64
             self._draw_button(
                 draw,
                 act,
                 (bx, by, bx + bw, by + bh),
                 lbl,
-                selected=(self.selected_idx % 3 == i),
+                selected=(self.selected_idx % 4 == i),
                 accent=acc,
             )
 
@@ -1183,7 +1248,9 @@ class HudOverlay:
         img = Image.new("RGBA", (self.width, self.height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
 
-        if state == AppState.MENU_PRINCIPAL:
+        if state == AppState.TUTORIAL:
+            self._draw_tutorial(draw)
+        elif state == AppState.MENU_PRINCIPAL:
             self._draw_menu_principal(draw)
         elif state == AppState.MENU_CONFIG:
             self._draw_menu_config(draw, bridge)

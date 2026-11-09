@@ -6,8 +6,7 @@
 ---
 
 **GABRIEL SANTOS TEIXEIRA** — Matrícula 515128  
-**INTEGRANTE 2** — Matrícula ______  
-**INTEGRANTE 3** — Matrícula ______
+**ELOI TELES DE MORAIS NETO** — Matrícula 514502  
 
 ---
 

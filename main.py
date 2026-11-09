@@ -37,19 +37,34 @@ def main() -> None:
     parser.add_argument("--at-base", action="store_true", help="Foca câmera na base (0,0)")
     parser.add_argument(
         "--state",
-        choices=("menu", "config", "modo", "robo", "moeda", "moeda_cara", "moeda_coroa", "jogo", "vitoria"),
+        choices=(
+            "tutorial",
+            "menu",
+            "config",
+            "modo",
+            "robo",
+            "moeda",
+            "moeda_cara",
+            "moeda_coroa",
+            "jogo",
+            "vitoria",
+        ),
         default=None,
         help="Abre diretamente em um estado específico da UI",
     )
     args = parser.parse_args()
 
-    init_state = AppState.MENU_PRINCIPAL
-    if args.sim or args.fast_turns > 0 or args.state in ("jogo", "vitoria"):
+    init_state = AppState.TUTORIAL
+    if args.state == "menu":
+        init_state = AppState.MENU_PRINCIPAL
+    elif args.sim or args.fast_turns > 0 or args.state in ("jogo", "vitoria"):
         init_state = AppState.EM_JOGO
 
     app = Application(seed=args.seed, initial_state=init_state)
 
-    if args.state == "config":
+    if args.state == "tutorial":
+        app.state = AppState.TUTORIAL
+    elif args.state == "config":
         app._execute_ui_action("menu_config")
     elif args.state == "robo":
         app._enter_robot_select()

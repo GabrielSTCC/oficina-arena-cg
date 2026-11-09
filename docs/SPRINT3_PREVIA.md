@@ -9,13 +9,12 @@
 
 **Tema:** Oficina cosy da arena de mineração  
 
-**Equipe (3 integrantes)**
+**Equipe (2 integrantes)**
 
 | Nome | Matrícula |
 |------|-----------|
 | Gabriel Santos Teixeira | 515128 |
-| Integrante 2 *(preencher)* | ______ |
-| Integrante 3 *(preencher)* | ______ |
+| Eloi Teles de Morais Neto | 514502 |
 
 ---
 
@@ -78,6 +77,38 @@ Fluxo de telas e regras: [LOGICA_DO_JOGO.md](LOGICA_DO_JOGO.md).
 
 ---
 
+## 2.6 Do planejamento (Sprint 1) → na aplicação
+
+| Planejado / escolha estética | Já na aplicação | Onde |
+|------------------------------|-----------------|------|
+| Galpão fechado, grade 15×9 | Hangar + piso da arena | `scene/environment.py`, `workshop.py` |
+| Catálogo ~8 itens (bancada, cadeira, luminária, abajur, planta, minério, estante, base) | Catálogo completo com T/R/S | `scene/catalog.py` |
+| Fantasma verde/vermelho; Q/E; +/− | Posicionamento na grade | `scene/placeable.py`, `app/application.py` |
+| 3 câmeras (planta / orbital / seguir) | Modos 1/2/3 + mouse | `gfx/camera.py` |
+| Phong; luz direcional (janela) + pontuais | Shaders + luminárias/abajur | `gfx/shaders/phong.*`, hangar |
+| Materiais madeira / metal / fosco / minério + texturas | PNG em `assets/textures/` | `gfx/mesh.py` (`Material`) |
+| Estética low-poly / cosy | Mantida (oficina, não hiper-realismo) | cena + materiais |
+| Reuso IA Arena Bot (A*, Minimax, BC) | Partida sincronizada com a cena | `world/core`, `world/ia`, `world/bridge.py` |
+
+---
+
+## 2.7 Modificações em relação ao planejamento e ao protótipo
+
+O **tema** permanece o mesmo (oficina cosy da arena de mineração). Mudanças são incrementais:
+
+| Antes (planejamento / protótipo) | Agora (versão prévia) |
+|----------------------------------|------------------------|
+| Ênfase em teclado; menu gráfico “simples” | Tutorial + menus/HUD (Pillow→textura GL), volume, ícones de janela |
+| Galpão com volumes mais simples | Hangar com painéis, hazard, janela e pós-processo (ainda ambiente fechado) |
+| Robôs placeholder / pouca animação | Robo 3 e Robo 5 com clips Mixamo (walk/idle/kneel/dança) |
+| Sem fluxo de partida “de jogo” completo na UI | Seleção de robô, modos, moeda 3D, vitória com dança/música |
+| Grade fixa 15×9 no planejamento | Configurável (até 28×17) + quantidades de minério/paredes/armadilhas |
+| Sprint 2 atrasada | Conteúdo do protótipo absorvido e ampliado nesta prévia |
+
+Áudio usa `pygame.mixer` apenas como auxiliar (enunciado permite efeitos sonoros; o render continua só em OpenGL).
+
+---
+
 ## 3. Atendimento aos critérios do enunciado
 
 | Critério (enunciado) | Peso | Situação na versão prévia |
@@ -108,12 +139,13 @@ Roteiro sugerido (~5–8 min):
 
 ## 5. Como executar
 
-Ver [README.md](../README.md).
+Ver [README.md](../README.md) e [ENTREGA_SPRINT3.md](ENTREGA_SPRINT3.md).
 
 ```bash
-cd Trabalho/oficina-arena
+git clone https://github.com/GabrielSTCC/oficina-arena-cg.git
+cd oficina-arena-cg
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python main.py
 ```
@@ -126,6 +158,24 @@ Estados úteis para demo rápida:
 python main.py --state robo      # seleção de robô
 python main.py --state vitoria  # dança da vitória (Alfa)
 ```
+
+**Repositório (assets / código completo):** https://github.com/GabrielSTCC/oficina-arena-cg
+
+---
+
+## 5.1 Atividades e dúvidas para o monitor
+
+**Equipe:** Gabriel Santos Teixeira (515128) e Eloi Teles de Morais Neto (514502).
+
+**Atividades feitas nesta prévia (resumo):** evolução visual do hangar; fluxo tutorial → menus → seleção → moeda → partida; animação Mixamo; integração IA; documentação e pacote SIGAA.
+
+**Dúvidas / pontos a validar com o monitor:**
+
+1. Decoração `LIVRE` aparece na cena mas não bloqueia a arena lógica — o robô “atravessa” a malha na simulação. Devemos bloquear na grade até a final?
+2. Root motion das danças Mixamo: `make_in_place` ajuda, mas frames extremos ainda podem oscilar. Isso é aceitável na prévia?
+3. Picking do fantasma no plano Y=0 falha em ângulos muito rasantes — priorizar correção agora ou na Sprint Final?
+
+Roteiro de demonstração: seção 4.
 
 ---
 
@@ -158,7 +208,6 @@ Arquivos em `docs/screenshots/`:
 | Decoração `LIVRE` na grade | Ocupa a cena mas não bloqueia a arena -> robô “atravessa” a malha na simulação |
 | Áudio `opaganastar` | Arquivo original veio como AAC com extensão `.mp3`; reencodado para MP3 real |
 | Picking em ângulos extremos | Ray no plano Y=0; em vistas muito rasantes pode falhar |
-| Equipe de 3 | Dois nomes/matrículas ainda a preencher nesta documentação |
 
 ---
 
@@ -171,7 +220,7 @@ Arquivos em `docs/screenshots/`:
 | `scene/` | Oficina, catálogo, placeables, atores (robô, moeda), modelos Mixamo |
 | `world/` | `core` + `ia` do Arena Bot (partida, A*, Minimax, BC) |
 | `audio/` | Música da dança de vitória (pygame.mixer) |
-| `assets/` | Modelos OBJ/NPZ, texturas, ícones, fontes Blender |
+| `assets/` | Modelos OBJ/NPZ, glTF, texturas, áudio, ícones |
 
 ---
 
@@ -180,8 +229,7 @@ Arquivos em `docs/screenshots/`:
 - Polir modelagem das peças do catálogo (cadeira/luminária mais legíveis)
 - Revisar animações Mixamo (idle/dança) e feedback visual de coleta
 - Vídeo de demonstração + pacote de código no SIGAA
-- Preencher nomes e matrículas dos dois integrantes restantes
-- Apresentação final (no máximo 15 min; todos os membros apresentam)
+- Apresentação final (no máximo 15 min; ambos os membros apresentam)
 
 ---
 

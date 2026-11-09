@@ -73,7 +73,7 @@ _BASE_ALFA_CELL = (0, 0)
 
 
 class Application:
-    def __init__(self, *, seed: int | None = None, initial_state: AppState = AppState.MENU_PRINCIPAL) -> None:
+    def __init__(self, *, seed: int | None = None, initial_state: AppState = AppState.TUTORIAL) -> None:
         music.init()
         if not glfw.init():
             raise RuntimeError("Falha ao iniciar GLFW")
@@ -428,7 +428,12 @@ class Application:
             self._apply_volume_at_x(self.last_x)
             self.drag_volume = True
             return
-        if action_id == "menu_iniciar":
+        if action_id == "tutorial_continuar":
+            self._enter_main_menu()
+        elif action_id == "menu_tutorial":
+            self.state = AppState.TUTORIAL
+            self.hud.selected_idx = 0
+        elif action_id == "menu_iniciar":
             self._enter_robot_select()
         elif action_id == "menu_config":
             self.state = AppState.MENU_CONFIG
@@ -457,7 +462,7 @@ class Application:
             self._sync_camera_to_grid()
         elif action_id == "cfg_voltar":
             self.state = AppState.MENU_PRINCIPAL
-            self.hud.selected_idx = 1
+            self.hud.selected_idx = 2
         elif action_id == "modo_com_com":
             self.bridge.mode = GameMode.COM_VS_COM
             self.bridge.reset_series()
@@ -588,14 +593,22 @@ class Application:
             self.hud.resize(w, h)
 
     def _on_menu_key(self, key: int) -> None:
+        if self.state == AppState.TUTORIAL:
+            if key in (glfw.KEY_ENTER, glfw.KEY_KP_ENTER, glfw.KEY_SPACE):
+                self._execute_ui_action("tutorial_continuar")
+            elif key == glfw.KEY_ESCAPE:
+                self._execute_ui_action("tutorial_continuar")
+            self.hud.mark_dirty()
+            return
+
         if self.state == AppState.MENU_PRINCIPAL:
             if key == glfw.KEY_UP:
-                self.hud.selected_idx = (self.hud.selected_idx - 1) % 3
+                self.hud.selected_idx = (self.hud.selected_idx - 1) % 4
             elif key == glfw.KEY_DOWN:
-                self.hud.selected_idx = (self.hud.selected_idx + 1) % 3
+                self.hud.selected_idx = (self.hud.selected_idx + 1) % 4
             elif key in (glfw.KEY_ENTER, glfw.KEY_KP_ENTER, glfw.KEY_SPACE):
-                acts = ["menu_iniciar", "menu_config", "menu_sair"]
-                self._execute_ui_action(acts[self.hud.selected_idx % 3])
+                acts = ["menu_iniciar", "menu_tutorial", "menu_config", "menu_sair"]
+                self._execute_ui_action(acts[self.hud.selected_idx % 4])
             elif key == glfw.KEY_ESCAPE:
                 glfw.set_window_should_close(self.win, True)
             self.hud.mark_dirty()
@@ -909,7 +922,12 @@ class Application:
             if fb_w > 0 and fb_h > 0 and (fb_w != self.post.width or fb_h != self.post.height):
                 self._on_resize(self.win, fb_w, fb_h)
 
-            if self.state in (AppState.MENU_PRINCIPAL, AppState.MENU_CONFIG, AppState.MENU_MODO):
+            if self.state in (
+                AppState.TUTORIAL,
+                AppState.MENU_PRINCIPAL,
+                AppState.MENU_CONFIG,
+                AppState.MENU_MODO,
+            ):
                 self.camera.yaw = (self.camera.yaw + dt * 9.0) % 360.0
             elif self.state == AppState.SELECAO_ROBO:
                 for i, sc in enumerate(self.showcase):
