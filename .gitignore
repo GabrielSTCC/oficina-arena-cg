@@ -1,7 +1,14 @@
 .venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 .ruff_cache/
 .pytest_cache/
+.mypy_cache/
 *.blend1
 .DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+.cursor/

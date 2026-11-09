@@ -8,11 +8,13 @@ from enum import Enum, auto
 import glm
 
 from gfx.mesh import (
+    MAT_ABAJUR,
     MAT_ALFA,
     MAT_ARMADILHA,
     MAT_BASE,
     MAT_BETA,
     MAT_FOSCO,
+    MAT_LUMINARIA,
     MAT_MADEIRA,
     MAT_METAL,
     MAT_MINERIO,
@@ -45,8 +47,8 @@ class CatalogItem:
 CATALOG: list[CatalogItem] = [
     CatalogItem("bancada", "Bancada", CellKind.PAREDE, MAT_MADEIRA),
     CatalogItem("cadeira", "Cadeira", CellKind.LIVRE, MAT_MADEIRA, default_scale=0.9),
-    CatalogItem("luminaria", "Luminária", CellKind.LIVRE, MAT_METAL, emits_light=True),
-    CatalogItem("abajur", "Abajur", CellKind.LIVRE, MAT_FOSCO, emits_light=True, default_scale=0.7),
+    CatalogItem("luminaria", "Luminária", CellKind.LIVRE, MAT_LUMINARIA, emits_light=True),
+    CatalogItem("abajur", "Abajur", CellKind.LIVRE, MAT_ABAJUR, emits_light=True, default_scale=0.7),
     CatalogItem("planta", "Planta", CellKind.LIVRE, MAT_FOSCO, default_scale=0.8),
     CatalogItem("minerio", "Minério", CellKind.MINERIO, MAT_MINERIO, default_scale=1.15),
     CatalogItem("estante", "Estante/Parede", CellKind.PAREDE, MAT_PAREDE),

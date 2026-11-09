@@ -12,11 +12,13 @@ uniform vec3 uViewPos;
 out vec2 v_uv;
 out vec3 v_normal;
 out vec3 v_viewDir;
+out vec3 v_worldPos;
 
 void main() {
     vec4 world = uModel * vec4(aPos, 1.0);
     v_uv = aUV;
     v_normal = normalize(uNormalMat * aNormal);
     v_viewDir = uViewPos - world.xyz;
+    v_worldPos = world.xyz;
     gl_Position = uProj * uView * world;
 }

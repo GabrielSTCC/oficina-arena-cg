@@ -73,6 +73,11 @@ class Shader:
 
         glUniform3f(self.loc(name), float(v.x), float(v.y), float(v.z))
 
+    def set_vec2(self, name: str, x: float, y: float) -> None:
+        from OpenGL.GL import glUniform2f
+
+        glUniform2f(self.loc(name), float(x), float(y))
+
     def set_float(self, name: str, v: float) -> None:
         from OpenGL.GL import glUniform1f
 

@@ -14,7 +14,15 @@ LARGURA_GRADE: Final[int] = 15
 ALTURA_GRADE: Final[int] = 9
 NUM_PAREDES: Final[int] = 25
 NUM_ARMADILHAS: Final[int] = 6
-NUM_MINERIOS: Final[int] = 12
+# Passos proporcionais (máx. cabe no galpão 30×22 com folga ~1 célula)
+TAMANHOS_ARENA: Final[tuple[tuple[int, int], ...]] = (
+    (15, 9),
+    (18, 11),
+    (20, 12),
+    (23, 14),
+    (25, 15),
+    (28, 17),
+)
 
 BASE_ALFA: Final[tuple[int, int]] = (0, 0)
 BASE_BETA: Final[tuple[int, int]] = (LARGURA_GRADE - 1, ALTURA_GRADE - 1)
@@ -27,6 +35,25 @@ VALORES_MINERIO: Final[dict[str, int]] = {
     "prata": 30,
     "bronze": 10,
 }
+# Quantidade mínima (= padrão) e máxima por tipo nas Configurações.
+MIN_MINERIO: Final[dict[str, int]] = {
+    "diamante": 3,
+    "rubi": 4,
+    "ouro": 5,
+    "prata": 6,
+    "bronze": 7,
+}
+MAX_MINERIO: Final[dict[str, int]] = {
+    "diamante": 20,
+    "rubi": 20,
+    "ouro": 30,
+    "prata": 30,
+    "bronze": 30,
+}
+# Espaços de carga ocupados (padrão 1). Diamante ocupa 2 dos 3 slots.
+PESO_MINERIO: Final[dict[str, int]] = {
+    "diamante": 2,
+}
 
 # --- Agente / economia -----------------------------------------------------
 BATERIA_INICIAL: Final[int] = 100
@@ -35,6 +62,8 @@ CUSTO_PASSO_ARMADILHA: Final[int] = 4
 CAPACIDADE_CARGA: Final[int] = 3
 BONUS_ENTREGA: Final[int] = 10
 LIMIAR_BATERIA_SEGURA: Final[int] = 10
+# Margem sobre ida+volta Manhattan (desvios de parede/armadilha)
+MARGEM_BATERIA: Final[float] = 1.35
 
 # Custo de aresta no grafo de busca A* (não confundir com gasto de bateria).
 CUSTO_ARESTA_NORMAL: Final[int] = 1

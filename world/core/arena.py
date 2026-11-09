@@ -29,6 +29,11 @@ class Minerio:
     tipo: str
     valor: int
 
+    @property
+    def peso(self) -> int:
+        """Espaços de carga ocupados (diamante = 2; demais = 1)."""
+        return int(config.PESO_MINERIO.get(self.tipo, 1))
+
 
 @dataclass
 class Arena:
@@ -50,91 +55,53 @@ class Arena:
     minerios: dict[Celula, Minerio] = field(default_factory=dict)
     seed: int | None = None
 
+    @property
+    def base_alfa(self) -> Celula:
+        return config.BASE_ALFA
+
+    @property
+    def base_beta(self) -> Celula:
+        return (self.largura - 1, self.altura - 1)
+
     def dentro_limites(self, celula: Celula) -> bool:
-        """Verifica se a célula está dentro da grade.
-
-        Args:
-            celula: Coordenada (x, y).
-
-        Returns:
-            True se a célula é válida geometricamente.
-        """
+        """Verifica se a célula está dentro da grade."""
         x, y = celula
         return 0 <= x < self.largura and 0 <= y < self.altura
 
     def eh_livre(self, celula: Celula) -> bool:
-        """Indica se a célula pode ser ocupada por um robô.
-
-        Args:
-            celula: Coordenada (x, y).
-
-        Returns:
-            True se está nos limites e não é parede.
-        """
+        """Indica se a célula pode ser ocupada por um robô."""
         return self.dentro_limites(celula) and celula not in self.paredes
 
     def custo_aresta(self, destino: Celula) -> int:
-        """Custo de entrar em ``destino`` no grafo de busca.
-
-        Args:
-            destino: Célula de chegada do passo.
-
-        Returns:
-            2 se armadilha, 1 caso contrário.
-        """
+        """Custo de entrar em ``destino`` no grafo de busca."""
         if destino in self.armadilhas:
             return config.CUSTO_ARESTA_ARMADILHA
         return config.CUSTO_ARESTA_NORMAL
 
     def vizinhos_validos(self, celula: Celula) -> list[Celula]:
-        """Retorna a vizinhança-4 transitável.
-
-        Args:
-            celula: Célula de origem.
-
-        Returns:
-            Lista de vizinhos ortogonais sem paredes nem fora da grade.
-        """
+        """Retorna a vizinhança-4 transitável."""
         x, y = celula
         candidatos = ((x, y - 1), (x, y + 1), (x - 1, y), (x + 1, y))
         return [v for v in candidatos if self.eh_livre(v)]
 
     def remover_minerio(self, celula: Celula) -> Minerio | None:
-        """Remove e devolve o minério na célula, se existir.
-
-        Args:
-            celula: Posição do minério.
-
-        Returns:
-            O minério removido ou None.
-        """
+        """Remove e devolve o minério na célula, se existir."""
         return self.minerios.pop(celula, None)
 
     def celulas_protegidas(self) -> set[Celula]:
-        """Células das bases e duas vizinhas ortogonais de cada uma.
-
-        Returns:
-            Conjunto de células que nunca recebem parede/armadilha/minério.
-        """
+        """Células das bases e duas vizinhas ortogonais de cada uma."""
+        bx, by = self.base_beta
         return {
-            config.BASE_ALFA,
+            self.base_alfa,
             (1, 0),
             (0, 1),
-            config.BASE_BETA,
-            (config.LARGURA_GRADE - 2, config.ALTURA_GRADE - 1),
-            (config.LARGURA_GRADE - 1, config.ALTURA_GRADE - 2),
+            self.base_beta,
+            (bx - 1, by),
+            (bx, by - 1),
         }
 
     def componente_conexa(self, origem: Celula) -> set[Celula]:
-        """BFS das células transitáveis alcançáveis a partir de ``origem``.
-
-        Args:
-            origem: Célula inicial (em geral uma base).
-
-        Returns:
-            Conjunto de células livres na mesma componente; vazio se origem
-            não for livre.
-        """
+        """BFS das células transitáveis alcançáveis a partir de ``origem``."""
         if not self.eh_livre(origem):
             return set()
         visto: set[Celula] = {origem}
@@ -150,43 +117,174 @@ class Arena:
 
 def _bases_conectadas(arena: Arena) -> bool:
     """True se Alfa e Beta estão na mesma componente conexa."""
-    return config.BASE_BETA in arena.componente_conexa(config.BASE_ALFA)
+    return arena.base_beta in arena.componente_conexa(arena.base_alfa)
+
+
+def _distancias_bfs(arena: Arena, origem: Celula) -> dict[Celula, int]:
+    """Distância em passos (BFS) de ``origem`` até cada célula livre alcançável."""
+    if not arena.eh_livre(origem):
+        return {}
+    dist: dict[Celula, int] = {origem: 0}
+    fila: deque[Celula] = deque([origem])
+    while fila:
+        atual = fila.popleft()
+        d = dist[atual]
+        for vizinho in arena.vizinhos_validos(atual):
+            if vizinho not in dist:
+                dist[vizinho] = d + 1
+                fila.append(vizinho)
+    return dist
+
+
+def _sortear_em(
+    rng: random.Random, candidatos: list[Celula], ocupadas: set[Celula]
+) -> Celula | None:
+    livres = [c for c in candidatos if c not in ocupadas]
+    if not livres:
+        return None
+    return rng.choice(livres)
+
+
+def _colocar_aleatorio(
+    arena: Arena,
+    rng: random.Random,
+    alcancaveis: list[Celula],
+    ocupadas: set[Celula],
+    tipo: str,
+) -> bool:
+    """Coloca 1 minério aleatório; retorna False se a arena estiver lotada."""
+    c = _sortear_em(rng, alcancaveis, ocupadas)
+    if c is None:
+        return False
+    arena.minerios[c] = Minerio(tipo=tipo, valor=config.VALORES_MINERIO[tipo])
+    ocupadas.add(c)
+    return True
+
+
+def _faixa_perto(largura: int, altura: int) -> tuple[int, int]:
+    """Distância BFS mínima e máxima do par perto das bases."""
+    k_min = max(4, (largura + altura) // 8)
+    raio = max(k_min + 2, (largura + altura) // 5)
+    return k_min, raio
+
+
+def _colocar_perto_par(
+    arena: Arena,
+    rng: random.Random,
+    d_a: dict[Celula, int],
+    d_b: dict[Celula, int],
+    ocupadas: set[Celula],
+    tipo: str,
+    k_min: int,
+    raio: int,
+) -> None:
+    """Coloca 1 minério perto de cada base, com a mesma distância BFS ``k``."""
+    valor = config.VALORES_MINERIO[tipo]
+    candidatos_k = [
+        k
+        for k in range(k_min, raio + 1)
+        if any(d == k and c not in ocupadas for c, d in d_a.items())
+        and any(d == k and c not in ocupadas for c, d in d_b.items())
+    ]
+    def _coloca(dist_map: dict[Celula, int], k: int) -> bool:
+        c = _sortear_em(rng, [c for c, d in dist_map.items() if d == k], ocupadas)
+        if c is None:
+            return False
+        arena.minerios[c] = Minerio(tipo=tipo, valor=valor)
+        ocupadas.add(c)
+        return True
+
+    if candidatos_k:
+        k = rng.choice(candidatos_k)
+        _coloca(d_a, k)
+        _coloca(d_b, k)
+        return
+
+    # Fallback: menor k compartilhado ainda >= k_min (mapa lotado)
+    comum = {
+        d
+        for c, d in d_a.items()
+        if d >= k_min and c not in ocupadas and any(
+            db == d and cb not in ocupadas for cb, db in d_b.items()
+        )
+    }
+    if comum:
+        k = min(comum)
+        _coloca(d_a, k)
+        _coloca(d_b, k)
+        return
+
+    # Último recurso: célula livre mais próxima de cada base com d >= k_min
+    for dist_map in (d_a, d_b):
+        livres = [(d, c) for c, d in dist_map.items() if c not in ocupadas and d >= k_min]
+        if not livres:
+            continue
+        livres.sort()
+        d_min = livres[0][0]
+        pool = [c for d, c in livres if d == d_min]
+        c = rng.choice(pool)
+        arena.minerios[c] = Minerio(tipo=tipo, valor=valor)
+        ocupadas.add(c)
+
+
+def _colocar_diamante_meio(
+    arena: Arena,
+    rng: random.Random,
+    d_a: dict[Celula, int],
+    d_b: dict[Celula, int],
+    ocupadas: set[Celula],
+) -> None:
+    """Coloca 1 diamante equidistante (|dA-dB|<=1), preferindo o centro da grade."""
+    valor = config.VALORES_MINERIO["diamante"]
+    cx, cz = (arena.largura - 1) * 0.5, (arena.altura - 1) * 0.5
+    equi = [
+        c
+        for c in d_a
+        if c in d_b and c not in ocupadas and abs(d_a[c] - d_b[c]) <= 1 and d_a[c] >= 1
+    ]
+    if equi:
+        equi.sort(key=lambda c: (c[0] - cx) ** 2 + (c[1] - cz) ** 2)
+        # entre as mais próximas do centro (top 25% ou no máx. 8), sorteia
+        n = max(1, min(8, max(1, len(equi) // 4)))
+        c = rng.choice(equi[:n])
+        arena.minerios[c] = Minerio(tipo="diamante", valor=valor)
+        ocupadas.add(c)
+        return
+
+    # Fallback: minimiza |dA-dB| e depois distância ao centro
+    livres = [c for c in d_a if c in d_b and c not in ocupadas and d_a[c] >= 1]
+    if not livres:
+        return
+    livres.sort(
+        key=lambda c: (
+            abs(d_a[c] - d_b[c]),
+            (c[0] - cx) ** 2 + (c[1] - cz) ** 2,
+        )
+    )
+    c = livres[0]
+    arena.minerios[c] = Minerio(tipo="diamante", valor=valor)
+    ocupadas.add(c)
 
 
 def gerar_arena(
     largura: int = config.LARGURA_GRADE,
     altura: int = config.ALTURA_GRADE,
     n_paredes: int = config.NUM_PAREDES,
-    n_minerios: int = config.NUM_MINERIOS,
     n_armadilhas: int = config.NUM_ARMADILHAS,
+    quantidades: dict[str, int] | None = None,
     seed: int | None = None,
 ) -> Arena:
     """Sorteia a arena preservando as células protegidas das bases.
 
-    Garante que as duas bases fiquem na mesma componente conexa e que todo
-    minério seja alcançável a partir delas (evita robô isolado sem alvo).
-
-    Args:
-        largura: Colunas da grade.
-        altura: Linhas da grade.
-        n_paredes: Quantidade de paredes.
-        n_minerios: Quantidade de minérios.
-        n_armadilhas: Quantidade de armadilhas.
-        seed: Semente do gerador pseudoaleatório.
-
-    Returns:
-        Instância de ``Arena`` preenchida.
+    ``quantidades`` define a contagem exata por tipo. Diamantes: 1 par perto
+    das bases + resto no meio. Rubis: 1 par perto + resto aleatório.
+    Ouro/prata/bronze: todos aleatórios. Arena lotada interrompe a colocação.
     """
+    qtd = dict(config.MIN_MINERIO if quantidades is None else quantidades)
     rng = random.Random(seed)
     arena = Arena(largura=largura, altura=altura, seed=seed)
     protegidas = set(arena.celulas_protegidas())
     max_tentativas = 250
-
-    def _sortear_em(candidatos: list[Celula], ocupadas: set[Celula]) -> Celula:
-        livres = [c for c in candidatos if c not in ocupadas]
-        if not livres:
-            raise RuntimeError("sem células livres para colocar elemento")
-        return rng.choice(livres)
 
     # Paredes: regenera até as bases permanecerem conectadas.
     todas = [(x, y) for y in range(altura) for x in range(largura)]
@@ -194,22 +292,23 @@ def gerar_arena(
     for _ in range(max_tentativas):
         arena.paredes.clear()
         ocupadas = set(protegidas)
+        ok = True
         for _ in range(n_paredes):
-            c = _sortear_em(todas, ocupadas)
+            c = _sortear_em(rng, todas, ocupadas)
+            if c is None:
+                ok = False
+                break
             arena.paredes.add(c)
             ocupadas.add(c)
-        if _bases_conectadas(arena):
+        if ok and _bases_conectadas(arena):
             paredes_ok = True
             break
 
     if not paredes_ok:
-        # Último recurso: menos paredes até conectar (mapa jogável).
         arena.paredes.clear()
         ocupadas = set(protegidas)
-        for c in rng.sample(
-            [c for c in todas if c not in ocupadas],
-            k=min(n_paredes, max(0, largura * altura - len(ocupadas) - 1)),
-        ):
+        livres = [c for c in todas if c not in ocupadas]
+        for c in rng.sample(livres, k=min(n_paredes, len(livres))):
             arena.paredes.add(c)
             ocupadas.add(c)
             if not _bases_conectadas(arena):
@@ -217,32 +316,49 @@ def gerar_arena(
                 ocupadas.discard(c)
 
     ocupadas = set(protegidas) | set(arena.paredes)
-    alcancaveis = sorted(arena.componente_conexa(config.BASE_ALFA))
+    alcancaveis = sorted(arena.componente_conexa(arena.base_alfa))
 
     for _ in range(n_armadilhas):
-        c = _sortear_em(alcancaveis, ocupadas)
+        c = _sortear_em(rng, alcancaveis, ocupadas)
+        if c is None:
+            break
         arena.armadilhas.add(c)
         ocupadas.add(c)
 
-    tipos = list(config.VALORES_MINERIO.items())
-    for _ in range(n_minerios):
-        c = _sortear_em(alcancaveis, ocupadas)
-        tipo, valor = rng.choice(tipos)
-        arena.minerios[c] = Minerio(tipo=tipo, valor=valor)
-        ocupadas.add(c)
+    d_a = _distancias_bfs(arena, arena.base_alfa)
+    d_b = _distancias_bfs(arena, arena.base_beta)
+    k_min, raio = _faixa_perto(largura, altura)
+
+    # Diamantes: par perto das bases + restantes no meio
+    n_dia = max(0, int(qtd.get("diamante", 0)))
+    if n_dia >= 2:
+        _colocar_perto_par(arena, rng, d_a, d_b, ocupadas, "diamante", k_min, raio)
+    while sum(1 for m in arena.minerios.values() if m.tipo == "diamante") < n_dia:
+        antes = len(arena.minerios)
+        _colocar_diamante_meio(arena, rng, d_a, d_b, ocupadas)
+        if len(arena.minerios) == antes:
+            break
+
+    # Rubis: par perto + restantes aleatórios
+    n_rub = max(0, int(qtd.get("rubi", 0)))
+    if n_rub >= 2:
+        _colocar_perto_par(arena, rng, d_a, d_b, ocupadas, "rubi", k_min, raio)
+    while sum(1 for m in arena.minerios.values() if m.tipo == "rubi") < n_rub:
+        if not _colocar_aleatorio(arena, rng, alcancaveis, ocupadas, "rubi"):
+            break
+
+    # Ouro / prata / bronze: todos aleatórios
+    for tipo in ("ouro", "prata", "bronze"):
+        n = max(0, int(qtd.get(tipo, 0)))
+        for _ in range(n):
+            if not _colocar_aleatorio(arena, rng, alcancaveis, ocupadas, tipo):
+                break
 
     return arena
 
 
 def celulas_livres(arena: Arena) -> Iterable[Celula]:
-    """Itera sobre todas as células transitáveis da arena.
-
-    Args:
-        arena: Ambiente corrente.
-
-    Yields:
-        Coordenadas livres (sem parede).
-    """
+    """Itera sobre todas as células transitáveis da arena."""
     for y in range(arena.altura):
         for x in range(arena.largura):
             c = (x, y)

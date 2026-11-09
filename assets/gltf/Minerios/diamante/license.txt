@@ -1,0 +1,11 @@
+Model Information:
+* title:	Diamond
+* source:	https://sketchfab.com/3d-models/diamond-1ab1e8de5a604b4081c15326eaa5682b
+* author:	Karolina Renkiewicz (https://sketchfab.com/KarolinaRenkiewicz)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Diamond" (https://sketchfab.com/3d-models/diamond-1ab1e8de5a604b4081c15326eaa5682b) by Karolina Renkiewicz (https://sketchfab.com/KarolinaRenkiewicz) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

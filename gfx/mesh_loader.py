@@ -11,18 +11,19 @@ from gfx.mesh import Material, Mesh
 from gfx.primitives import make_box
 from gfx.texture import load_texture
 
-# modelos3D/Robos (pasta irmã de Trabalho/)
-_CG_ROOT = Path(__file__).resolve().parents[3]
-ROBOS_DIR = _CG_ROOT / "modelos3D" / "Robos"
-WAREHOUSE_GLTF = _CG_ROOT / "modelos3D" / "Ambientação" / "warehouse" / "scene.gltf"
-BASE2_GLTF = _CG_ROOT / "modelos3D" / "Ambientação" / "Base2" / "scene.gltf"
-SCIFI_WALL_GLTF = _CG_ROOT / "modelos3D" / "Ambientação" / "sci-fi_wall" / "scene.gltf"
-MINERIOS_DIR = _CG_ROOT / "modelos3D" / "Minerios"
+ROOT = Path(__file__).resolve().parents[1]
+GLTF_DIR = ROOT / "assets" / "gltf"
+BASE2_GLTF = GLTF_DIR / "Base2" / "scene.gltf"
+SCIFI_WALL_GLTF = GLTF_DIR / "sci-fi_wall" / "scene.gltf"
+EURO_COIN_GLTF = GLTF_DIR / "Moeda" / "euro" / "scene.gltf"
+MINERIOS_DIR = GLTF_DIR / "Minerios"
 ORE_GLTFS: dict[str, Path] = {
     "diamante": MINERIOS_DIR / "diamante" / "scene.gltf",
     "ouro": MINERIOS_DIR / "ouro" / "scene.gltf",
     "prata": MINERIOS_DIR / "prata" / "scene.gltf",
 }
+# OBJ debug opcional (teclas T/5–8); ausente no clone padrão — vira placeholder
+ROBOS_DIR = ROOT / "assets" / "robots_obj"
 # tipos da arena → chave de malha (rubi/bronze reusam diamante/prata)
 ORE_MESH_FOR_TIPO: dict[str, str] = {
     "diamante": "diamante",
@@ -35,7 +36,7 @@ ORE_MESH_FOR_TIPO: dict[str, str] = {
 DOWNLOADED_ROBOTS: dict[str, Path] = {
     "robo1": ROBOS_DIR / "Robo 1" / "78508.obj",
     "robo2": ROBOS_DIR / "Robo 2" / "78364.obj",
-    "robo3": ROBOS_DIR / "Robo 3" / "77938.obj",
+    "robo3": ROBOS_DIR / "77938" / "77938.obj",
     "robo4": ROBOS_DIR / "Robo 4" / "78413.obj",
 }
 

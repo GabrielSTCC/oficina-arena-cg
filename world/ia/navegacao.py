@@ -53,10 +53,25 @@ def buscar_caminho(
     if origem == destino:
         return ResultadoBusca(caminho=[], custo=0, nos_expandidos=0, alcancavel=True)
 
+    usa_cache = heuristica is manhattan
+    assinatura = (len(arena.paredes), len(arena.armadilhas))
+    cache: dict[tuple[Celula, Celula], ResultadoBusca] | None = None
+    if usa_cache:
+        if getattr(arena, "_astar_sig", None) != assinatura:
+            arena._astar_sig = assinatura  # type: ignore[attr-defined]
+            arena._astar_cache = {}  # type: ignore[attr-defined]
+        cache = arena._astar_cache  # type: ignore[attr-defined]
+        cached = cache.get((origem, destino))
+        if cached is not None:
+            return cached
+
     if not arena.eh_livre(destino):
-        return ResultadoBusca(
+        res_bloqueado = ResultadoBusca(
             caminho=[], custo=float("inf"), nos_expandidos=0, alcancavel=False
         )
+        if cache is not None:
+            cache[(origem, destino)] = res_bloqueado
+        return res_bloqueado
 
     # Fronteira: (f, contador_desempate, nó)
     fronteira: list[tuple[float, int, Celula]] = []
@@ -77,12 +92,15 @@ def buscar_caminho(
 
         if atual == destino:
             caminho = _reconstruir(veio_de, destino)
-            return ResultadoBusca(
+            res_ok = ResultadoBusca(
                 caminho=caminho,
                 custo=g_score[destino],
                 nos_expandidos=nos_expandidos,
                 alcancavel=True,
             )
+            if cache is not None:
+                cache[(origem, destino)] = res_ok
+            return res_ok
 
         for vizinho in arena.vizinhos_validos(atual):
             custo_passo = arena.custo_aresta(vizinho)
@@ -94,12 +112,15 @@ def buscar_caminho(
                 contador += 1
                 heapq.heappush(fronteira, (f, contador, vizinho))
 
-    return ResultadoBusca(
+    res_falha = ResultadoBusca(
         caminho=[],
         custo=float("inf"),
         nos_expandidos=nos_expandidos,
         alcancavel=False,
     )
+    if cache is not None:
+        cache[(origem, destino)] = res_falha
+    return res_falha
 
 
 def _reconstruir(

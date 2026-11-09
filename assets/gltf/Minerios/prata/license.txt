@@ -1,0 +1,11 @@
+Model Information:
+* title:	Silver Ingot
+* source:	https://sketchfab.com/3d-models/silver-ingot-1b56680fb71845e3b69d82074801e3e9
+* author:	3DKoraX (https://sketchfab.com/3DKoraX)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Silver Ingot" (https://sketchfab.com/3d-models/silver-ingot-1b56680fb71845e3b69d82074801e3e9) by 3DKoraX (https://sketchfab.com/3DKoraX) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

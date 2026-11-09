@@ -1,8 +1,9 @@
 """
 Estratégia competitiva: Minimax recursivo com poda alfa-beta.
 
-O espaço de ações abstrai a escolha de minério (ou retorno à base). Distâncias
-rasas usam A*; nós profundos usam Manhattan para conter o custo de busca.
+O espaço de ações abstrai a escolha de minério (ou retorno à base), respeitando
+o limite de 3 minérios por viagem (CAPACIDADE_CARGA) e a bateria necessária
+para percorrer a rota até o minério e retornar à base.
 """
 
 from __future__ import annotations
@@ -18,12 +19,7 @@ from ia.navegacao import buscar_caminho, custo_bateria
 
 @dataclass
 class ContadoresMinimax:
-    """Acumuladores para experimentos de poda.
-
-    Attributes:
-        nos_avaliados: Nós visitados na última chamada.
-        podas: Quantidade de cortes alfa-beta realizados.
-    """
+    """Acumuladores para experimentos de poda."""
 
     nos_avaliados: int = 0
     podas: int = 0
@@ -31,24 +27,13 @@ class ContadoresMinimax:
     def reset(self) -> None:
         """Zera os contadores."""
         self.nos_avaliados = 0
-        self.podas = 0
+        podas = 0
+        self.podas = podas
 
 
 @dataclass(frozen=True)
 class EstadoEstrategico:
-    """Estado abstrato para a árvore Minimax (soma zero).
-
-    Attributes:
-        pos_max: Posição do jogador maximizador (agente da vez na raiz).
-        pos_min: Posição do adversário.
-        pts_max: Pontuação do maximizador.
-        pts_min: Pontuação do minimizador.
-        minerios: Mapa restante de minérios.
-        carga_max: Carga atual do maximizador.
-        carga_min: Carga atual do minimizador.
-        base_max: Base do maximizador.
-        base_min: Base do minimizador.
-    """
+    """Estado abstrato para a árvore Minimax (soma zero)."""
 
     pos_max: Celula
     pos_min: Celula
@@ -59,44 +44,29 @@ class EstadoEstrategico:
     carga_min: int
     base_max: Celula
     base_min: Celula
+    bat_max: int = config.BATERIA_INICIAL
+    bat_min: int = config.BATERIA_INICIAL
 
 
 @dataclass
 class ContextoBusca:
-    """Parâmetros compartilhados na recursão Minimax.
-
-    Attributes:
-        arena: Topologia (paredes/armadilhas) para A* nos nós rasos.
-        profundidade_max: Limite de plies.
-        usar_poda: Se False, percorre a árvore completa (experimento).
-        contadores: Estatísticas de nós/podas.
-        descartados: Células já marcadas como inalcançáveis pelo agente.
-        peso_valor: Peso do valor do minério na Eval.
-        peso_dist: Peso da vantagem de distância na Eval.
-    """
+    """Parâmetros compartilhados na recursão Minimax."""
 
     arena: Arena
     profundidade_max: int = config.PROFUNDIDADE_MINIMAX
     usar_poda: bool = True
     contadores: ContadoresMinimax = field(default_factory=ContadoresMinimax)
     descartados: set[Celula] = field(default_factory=set)
+    custo_armadilha: int = config.CUSTO_PASSO_ARMADILHA
+    bateria_maxima: int = config.BATERIA_INICIAL
     peso_valor: float = config.PESO_VALOR_MINERIO
     peso_dist: float = config.PESO_VANTAGEM_DISTANCIA
+    cache_dist: dict[tuple[Celula, Celula], float] = field(default_factory=dict)
+    cache_bat: dict[tuple[Celula, Celula], float] = field(default_factory=dict)
 
 
 def avaliar(estado: EstadoEstrategico, ctx: ContextoBusca) -> float:
-    """Função de avaliação para cortes de profundidade.
-
-    Combina utilidade de soma zero com incentivo a minérios vantajosos:
-    valor ponderado + vantagem de distância Manhattan sobre o adversário.
-
-    Args:
-        estado: Nó folha / corte.
-        ctx: Contexto com pesos.
-
-    Returns:
-        Estimativa de utilidade do maximizador.
-    """
+    """Função de avaliação para cortes de profundidade."""
     utilidade = float(estado.pts_max - estado.pts_min)
     if not estado.minerios:
         return utilidade
@@ -118,32 +88,50 @@ def avaliar(estado: EstadoEstrategico, ctx: ContextoBusca) -> float:
 
 
 def _distancia(
-    arena: Arena,
+    ctx: ContextoBusca,
     origem: Celula,
     destino: Celula,
     ply_restante: int,
-    profundidade_max: int,
 ) -> float:
-    """Estima distância: A* nos plies rasos, Manhattan nos profundos.
-
-    Args:
-        arena: Ambiente.
-        origem: Partida.
-        destino: Chegada.
-        ply_restante: Profundidade ainda disponível na recursão.
-        profundidade_max: Limite total configurado.
-
-    Returns:
-        Custo estimado; inf se inalcançável no A* raso.
-    """
-    # Nós rasos: ply próximo da raiz (profundidade já consumida pequena).
-    profundidade_consumida = profundidade_max - ply_restante
+    """Estima distância: A* (com cache) nos plies rasos, Manhattan nos profundos."""
+    if origem == destino:
+        return 0.0
+    profundidade_consumida = ctx.profundidade_max - ply_restante
     if profundidade_consumida <= 1:
-        res = buscar_caminho(arena, origem, destino)
-        if not res.alcancavel:
-            return float("inf")
-        return float(res.custo)
+        chave = (origem, destino)
+        if chave in ctx.cache_dist:
+            return ctx.cache_dist[chave]
+        res = buscar_caminho(ctx.arena, origem, destino)
+        val = float(res.custo) if res.alcancavel else float("inf")
+        ctx.cache_dist[chave] = val
+        return val
     return float(manhattan(origem, destino))
+
+
+def _gasto_bateria(
+    ctx: ContextoBusca,
+    origem: Celula,
+    destino: Celula,
+    ply_restante: int,
+) -> float:
+    """Custo real de bateria (A* com cache) nos plies rasos, estimativa nos profundos."""
+    if origem == destino:
+        return 0.0
+    profundidade_consumida = ctx.profundidade_max - ply_restante
+    if profundidade_consumida <= 1:
+        chave = (origem, destino)
+        if chave in ctx.cache_bat:
+            return ctx.cache_bat[chave]
+        val = custo_bateria(
+            ctx.arena,
+            origem,
+            destino,
+            config.CUSTO_PASSO_NORMAL,
+            ctx.custo_armadilha,
+        )
+        ctx.cache_bat[chave] = val
+        return val
+    return float(manhattan(origem, destino) * config.CUSTO_PASSO_NORMAL)
 
 
 def _acoes(
@@ -152,37 +140,33 @@ def _acoes(
     ctx: ContextoBusca,
     ply_restante: int,
 ) -> list[Celula]:
-    """Gera ações candidatas: minérios restantes ou retorno à base.
-
-    Args:
-        estado: Estado corrente.
-        maximizando: True se é a vez do maximizador.
-        ctx: Contexto de busca.
-        ply_restante: Plies restantes (para escolha A*/Manhattan).
-
-    Returns:
-        Lista de células-alvo candidatas.
-    """
+    """Gera ações candidatas respeitando máximo de 3 minérios e bateria p/ voltar."""
     pos = estado.pos_max if maximizando else estado.pos_min
     base = estado.base_max if maximizando else estado.base_min
     carga = estado.carga_max if maximizando else estado.carga_min
+    bat = estado.bat_max if maximizando else estado.bat_min
 
     if carga >= config.CAPACIDADE_CARGA:
-        return [base]
+        return [base] if pos != base else []
 
     candidatos: list[Celula] = []
-    for mpos in estado.minerios:
+    for mpos, minerio in estado.minerios.items():
         if mpos in ctx.descartados:
             continue
-        dist = _distancia(ctx.arena, pos, mpos, ply_restante, ctx.profundidade_max)
-        if dist == float("inf"):
+        if carga + minerio.peso > config.CAPACIDADE_CARGA:
+            continue
+        ida = _gasto_bateria(ctx, pos, mpos, ply_restante)
+        if ida == float("inf"):
+            continue
+        volta = _gasto_bateria(ctx, mpos, base, ply_restante)
+        if bat < ida + volta:
             continue
         candidatos.append(mpos)
 
-    if carga > 0:
+    if carga > 0 and pos != base:
         candidatos.append(base)
 
-    if not candidatos and carga > 0:
+    if not candidatos and pos != base and (carga > 0 or bat < ctx.bateria_maxima):
         return [base]
     return candidatos
 
@@ -194,34 +178,27 @@ def _aplicar(
     ctx: ContextoBusca,
     ply_restante: int,
 ) -> EstadoEstrategico | None:
-    """Aplica a ação abstrata (ir ao alvo e coletar / descarregar).
-
-    Se os dois disputam o mesmo minério, quem está estritamente mais perto
-    fica com os pontos e a carga. Empate, adversário inalcançável ou
-    adversário com carga cheia: o jogador da vez coleta.
-
-    Args:
-        estado: Estado pai.
-        alvo: Célula escolhida.
-        maximizando: Jogador da vez.
-        ctx: Contexto.
-        ply_restante: Plies restantes.
-
-    Returns:
-        Novo estado ou None se a ação for inválida.
-    """
+    """Aplica a ação abstrata (ir ao alvo e coletar até 3 minérios / descarregar)."""
     if maximizando:
         pos, base = estado.pos_max, estado.base_max
-        pts, carga = estado.pts_max, estado.carga_max
+        pts, carga, bat = estado.pts_max, estado.carga_max, estado.bat_max
         pos_inimigo = estado.pos_min
-        pts_inimigo, carga_inimigo = estado.pts_min, estado.carga_min
+        pts_inimigo, carga_inimigo, bat_inimigo = (
+            estado.pts_min,
+            estado.carga_min,
+            estado.bat_min,
+        )
     else:
         pos, base = estado.pos_min, estado.base_min
-        pts, carga = estado.pts_min, estado.carga_min
+        pts, carga, bat = estado.pts_min, estado.carga_min, estado.bat_min
         pos_inimigo = estado.pos_max
-        pts_inimigo, carga_inimigo = estado.pts_max, estado.carga_max
+        pts_inimigo, carga_inimigo, bat_inimigo = (
+            estado.pts_max,
+            estado.carga_max,
+            estado.bat_max,
+        )
 
-    dist = _distancia(ctx.arena, pos, alvo, ply_restante, ctx.profundidade_max)
+    dist = _distancia(ctx, pos, alvo, ply_restante)
     if dist == float("inf"):
         return None
 
@@ -236,23 +213,25 @@ def _aplicar(
             novos_pts += carga * config.BONUS_ENTREGA
             nova_carga = 0
         nova_pos = base
+        nova_bat = ctx.bateria_maxima
     else:
         minerio = novos_minerios.pop(alvo, None)
         if minerio is None:
             return None
-        dist_inimigo = _distancia(
-            ctx.arena, pos_inimigo, alvo, ply_restante, ctx.profundidade_max
-        )
+        dist_inimigo = _distancia(ctx, pos_inimigo, alvo, ply_restante)
         adversario_chega_antes = (
-            dist_inimigo < dist and carga_inimigo < config.CAPACIDADE_CARGA
+            dist_inimigo < dist
+            and carga_inimigo + minerio.peso <= config.CAPACIDADE_CARGA
         )
         nova_pos = alvo
+        gasto = _gasto_bateria(ctx, pos, alvo, ply_restante)
+        nova_bat = max(0, int(bat - gasto))
         if adversario_chega_antes:
             novos_pts_inimigo += minerio.valor
-            nova_carga_inimigo = min(carga_inimigo + 1, config.CAPACIDADE_CARGA)
+            nova_carga_inimigo = min(carga_inimigo + minerio.peso, config.CAPACIDADE_CARGA)
         else:
             novos_pts += minerio.valor
-            nova_carga = min(carga + 1, config.CAPACIDADE_CARGA)
+            nova_carga = min(carga + minerio.peso, config.CAPACIDADE_CARGA)
 
     if maximizando:
         return EstadoEstrategico(
@@ -265,6 +244,8 @@ def _aplicar(
             carga_min=nova_carga_inimigo,
             base_max=estado.base_max,
             base_min=estado.base_min,
+            bat_max=nova_bat,
+            bat_min=bat_inimigo,
         )
     return EstadoEstrategico(
         pos_max=estado.pos_max,
@@ -276,6 +257,8 @@ def _aplicar(
         carga_min=nova_carga,
         base_max=estado.base_max,
         base_min=estado.base_min,
+        bat_max=bat_inimigo,
+        bat_min=nova_bat,
     )
 
 
@@ -287,19 +270,7 @@ def _minimax(
     maximizando: bool,
     ctx: ContextoBusca,
 ) -> float:
-    """Recursão Minimax com poda alfa-beta opcional.
-
-    Args:
-        estado: Nó corrente.
-        profundidade: Plies restantes.
-        alfa: Melhor valor garantido para MAX.
-        beta: Melhor valor garantido para MIN.
-        maximizando: Vez de MAX.
-        ctx: Contexto compartilhado.
-
-    Returns:
-        Valor utilitário do nó.
-    """
+    """Recursão Minimax com poda alfa-beta."""
     ctx.contadores.nos_avaliados += 1
 
     if profundidade == 0 or not estado.minerios:
@@ -351,58 +322,60 @@ def escolher_alvo(
     base_inimigo: Celula,
     minerios: dict[Celula, Minerio],
     descartados: set[Celula],
-    bateria_agente: int,  
+    bateria_agente: int,
     custo_armadilha: int,
+    bateria_maxima: int = config.BATERIA_INICIAL,
     forcar_base: bool = False,
     profundidade: int = config.PROFUNDIDADE_MINIMAX,
     usar_poda: bool = True,
     contadores: ContadoresMinimax | None = None,
 ) -> Celula | None:
-    """Escolhe o próximo alvo via Minimax com poda alfa-beta.
-
-    Args:
-        arena: Ambiente.
-        pos_agente: Posição do robô da vez.
-        pos_inimigo: Posição do oponente.
-        pts_agente: Pontuação do robô da vez.
-        pts_inimigo: Pontuação do oponente.
-        carga_agente: Carga do robô da vez.
-        carga_inimigo: Carga do oponente.
-        base_agente: Base do robô da vez.
-        base_inimigo: Base do oponente.
-        minerios: Minérios restantes.
-        descartados: Alvos inalcançáveis.
-        bateria_agente: Bateria atual do robô da vez.
-        custo_armadilha: Bateria gasta ao pisar em armadilha nesta partida.
-        forcar_base: Se True, retorna a base (ex.: Pdescarga).
-        profundidade: Profundidade em plies (padrão ≥ 4).
-        usar_poda: Ativa poda alfa-beta.
-        contadores: Objeto opcional para estatísticas.
-
-    Returns:
-        Célula alvo ou None se não há ação útil.
-    """
+    """Escolhe o próximo alvo via Minimax com poda alfa-beta."""
     if forcar_base or carga_agente >= config.CAPACIDADE_CARGA:
-        return base_agente
+        if pos_agente != base_agente or carga_agente > 0:
+            return base_agente
+        descartados.update(minerios.keys())
+        return None
 
     minerios_uteis = {
         p: m for p, m in minerios.items() if p not in descartados
     }
-    # Prioridade: só persegue minério de onde ainda dá para voltar à base.
-    viaveis = {}
+    cache_bat: dict[tuple[Celula, Celula], float] = {}
+    # Pré-filtro por rota real A*:
+    # 1) Se nem saindo da base com bateria_maxima o robô consegue ir e voltar, descarta já.
+    # 2) Só aceita para a viagem atual se a bateria_agente cobrir ida + volta.
+    viaveis: dict[Celula, Minerio] = {}
     for pos, minerio in minerios_uteis.items():
-        ida = custo_bateria(arena, pos_agente, pos, config.CUSTO_PASSO_NORMAL, custo_armadilha)
+        if carga_agente + minerio.peso > config.CAPACIDADE_CARGA:
+            continue
         volta = custo_bateria(arena, pos, base_agente, config.CUSTO_PASSO_NORMAL, custo_armadilha)
-        if bateria_agente > ida + volta + 2 * custo_armadilha:
+        cache_bat[(pos, base_agente)] = volta
+        ida_base = (
+            volta
+            if pos_agente == base_agente
+            else custo_bateria(arena, base_agente, pos, config.CUSTO_PASSO_NORMAL, custo_armadilha)
+        )
+        cache_bat[(base_agente, pos)] = ida_base
+        if ida_base + volta > bateria_maxima:
+            descartados.add(pos)
+            continue
+
+        ida = (
+            ida_base
+            if pos_agente == base_agente
+            else custo_bateria(arena, pos_agente, pos, config.CUSTO_PASSO_NORMAL, custo_armadilha)
+        )
+        cache_bat[(pos_agente, pos)] = ida
+        if bateria_agente >= ida + volta:
             viaveis[pos] = minerio
     minerios_uteis = viaveis
 
     if not minerios_uteis:
-        if carga_agente > 0 or bateria_agente < config.BATERIA_INICIAL:
-            # Volta para descarregar/recarregar e tenta de novo com bateria cheia.
+        if pos_agente != base_agente:
+            # Sem minério útil (sumiu / inalcançável): volta à base em vez de ficar parado.
             return base_agente
-        # Nem com bateria cheia dá para ir e voltar: desiste desses minérios.
-        descartados.update(minerios)
+        # Já na base: marca o que sobrou como descartado.
+        descartados.update(minerios.keys())
         return None
 
     ctx = ContextoBusca(
@@ -411,6 +384,9 @@ def escolher_alvo(
         usar_poda=usar_poda,
         contadores=contadores or ContadoresMinimax(),
         descartados=set(descartados),
+        custo_armadilha=custo_armadilha,
+        bateria_maxima=bateria_maxima,
+        cache_bat=cache_bat,
     )
     ctx.contadores.reset()
 
@@ -424,6 +400,8 @@ def escolher_alvo(
         carga_min=carga_inimigo,
         base_max=base_agente,
         base_min=base_inimigo,
+        bat_max=bateria_agente,
+        bat_min=bateria_maxima,
     )
 
     melhor_alvo: Celula | None = None
@@ -433,9 +411,6 @@ def escolher_alvo(
     for alvo in _acoes(raiz, True, ctx, profundidade):
         filho = _aplicar(raiz, alvo, True, ctx, profundidade)
         if filho is None:
-            if alvo != base_agente:
-                # Sinaliza inalcançável para o chamador via ausência de filho.
-                continue
             continue
         valor = _minimax(filho, profundidade - 1, alfa, beta, False, ctx)
         if valor > melhor_valor:
@@ -444,6 +419,9 @@ def escolher_alvo(
         if usar_poda and valor > alfa:
             alfa = valor
 
-    if melhor_alvo is None and carga_agente > 0:
-        return base_agente
+    if melhor_alvo is None:
+        if pos_agente != base_agente and (carga_agente > 0 or bateria_agente < bateria_maxima):
+            return base_agente
+        descartados.update(minerios.keys())
+        return None
     return melhor_alvo

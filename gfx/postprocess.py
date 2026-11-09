@@ -162,9 +162,12 @@ class PostProcess:
             raise RuntimeError("Scene MRT FBO incompleto")
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-        self.blur_tex_a = _make_color_tex(self.width, self.height)
+        # Blur em meia resolução (~4x menos fragmentos); composite faz upsample com LINEAR
+        self.blur_w = max(1, self.width // 2)
+        self.blur_h = max(1, self.height // 2)
+        self.blur_tex_a = _make_color_tex(self.blur_w, self.blur_h)
         self.blur_fbo_a = _fbo_single(self.blur_tex_a)
-        self.blur_tex_b = _make_color_tex(self.width, self.height)
+        self.blur_tex_b = _make_color_tex(self.blur_w, self.blur_h)
         self.blur_fbo_b = _fbo_single(self.blur_tex_b)
 
     def begin_scene(self) -> None:
@@ -185,8 +188,9 @@ class PostProcess:
         glDisable(GL_DEPTH_TEST)
 
         src = self.bright_tex
-        texel_x = 1.0 / self.width
-        texel_y = 1.0 / self.height
+        texel_x = 1.0 / self.blur_w
+        texel_y = 1.0 / self.blur_h
+        glViewport(0, 0, self.blur_w, self.blur_h)
         for _ in range(blur_passes):
             glBindFramebuffer(GL_FRAMEBUFFER, self.blur_fbo_a)
             glDrawBuffers(1, [GL_COLOR_ATTACHMENT0])

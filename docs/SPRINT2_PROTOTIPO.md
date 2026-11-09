@@ -9,7 +9,7 @@
 - Projeto Python + OpenGL 3.3 + GLFW + PyGLM
 - Galpão fechado (chão, paredes, teto) sobre grade 15×9
 - Catálogo com 8 itens (bancada, cadeira, luminária, abajur, planta, minério, estante, base)
-- Malhas OBJ geradas/exportadas via Blender (`assets/blender/export_catalog.py`)
+- Malhas OBJ exportadas via Blender (pipeline de export já concluído; assets em `assets/models`)
 - Transformações: translação na grade, rotação (`Q`/`E`), escala (`+/-`)
 - Fantasma de posicionamento (verde/vermelho)
 - Shader Phong mínimo + luz direcional
@@ -24,7 +24,7 @@
 
 ## Diferenças em relação ao planejamento (Sprint 1)
 
-- Malhas ainda são volumes simples (não detalhe artesanal); pipeline Blender pronto para evoluir
+- Malhas ainda são volumes simples (não detalhe artesanal); export Blender já feito nos assets finais
 - Texturas PNG existem, mas o MVP prioriza Kd no Phong (flag de textura preparada)
 - Entrega Sprint 2 atrasada; empacotada junto com a Sprint 3
 

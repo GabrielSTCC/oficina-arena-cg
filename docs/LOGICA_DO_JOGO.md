@@ -16,12 +16,14 @@ O OpenGL **não** decide rota. Ele lê posição/estado e anima.
 
 **Fluxo resumido**
 
-1. Edição da cena 15×9  
-2. Tecla **P** / **R** → `WorldBridge` sincroniza cena → `Partida`  
-3. A cada ~0,35 s → `Partida.executar_turno()`  
-4. Decidir alvo (Minimax ou base via BC) → A* → andar 1 célula  
-5. Na base: descarregar; senão: tentar coletar se `Acoletar`  
-6. Espelhar minérios removidos na cena 3D  
+1. Menu → **Jogar** → seleção de robô (Robo 3 / Robo 5; Alfa = escolhido, Beta = o outro)  
+2. Modo de jogo → moeda 3D → partida  
+3. Tecla **P** / **R** → `WorldBridge` sincroniza cena → `Partida`  
+4. A cada ~0,35 s → `Partida.executar_turno()`  
+5. Decidir alvo (Minimax ou base via BC) → A* → andar 1 célula  
+6. Na base: descarregar; senão: tentar coletar se `Acoletar`  
+7. Espelhar minérios removidos na cena 3D  
+8. Fim do round com vencedor → dança da vitória no centro (1 das 2 danças do modelo); empate sem dança 
 
 ---
 
@@ -45,13 +47,13 @@ Arquivo: `world/core/partida.py` → `Partida.executar_turno`
 
 | Peça | Regra |
 |------|--------|
-| Grade | 15×9, movimento ortogonal (N/S/L/O) |
+| Grade | 15×9 por padrão (ajustável em Configurações até 28×17, o limite do galpão), movimento ortogonal (N/S/L/O) |
 | Parede | Intransitável |
 | Armadilha | Transitável, custo dobrado |
-| Minério | diamante 100 / rubi 80 / ouro 50 / prata 30 / bronze 10 |
+| Minério | diamante 100 / rubi 80 / ouro 50 / prata 30 / bronze 10; quantidade configurável por tipo (padrão = mínimo base 15×9: 3/4/5/6/7); o mínimo sobe com a área da arena (`ceil(base × área/135)`), como a bateria; diamantes: 1 par perto das bases + resto no meio; rubis: 1 par perto + resto aleatório |
 | Base Alfa | (0, 0) |
-| Base Beta | (14, 8) |
-| Defaults | 25 paredes, 6 armadilhas, 12 minérios |
+| Base Beta | canto oposto `(largura-1, altura-1)` |
+| Defaults | 25 paredes, 6 armadilhas, 25 minérios na 15×9 (3+4+5+6+7); caps UI: 150 paredes / 80 armadilhas |
 
 - Sem colisão robô–robô.  
 - Decoração `LIVRE` (cadeira, planta, luminária) ocupa a cena mas **não** entra na arena → na simulação o robô “atravessa” a malha.
@@ -65,9 +67,10 @@ Arquivo: `world/core/agente.py`
 | Campo | Papel |
 |-------|--------|
 | `posicao`, `base` | Célula atual e base própria |
-| `bateria` | Começa em 100; −2 / −4 por passo |
-| `carga` | 0…3 |
-| `pontuacao` | +valor ao coletar; +`carga×10` ao descarregar |
+| `bateria` | Começa no valor configurado (mínimo recomendado sobe com o tamanho da arena; em 15×9 o mínimo é 120); −2 / −4 por passo |
+| `carga` | 0…3 espaços; diamante ocupa 2, demais 1 |
+| `itens` | contagem de minérios carregados (bônus de entrega = `itens×10`) |
+| `pontuacao` | +valor ao coletar; +`itens×10` ao descarregar |
 | `alvo`, `caminho` | Meta e fila A* |
 | `bc` | Base de conhecimento proposicional |
 

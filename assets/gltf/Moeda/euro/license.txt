@@ -1,0 +1,11 @@
+Model Information:
+* title:	1 Euro Coin
+* source:	https://sketchfab.com/3d-models/1-euro-coin-992424bd87714a29bcd4c58940e05ded
+* author:	korkigames (https://sketchfab.com/korkigames)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "1 Euro Coin" (https://sketchfab.com/3d-models/1-euro-coin-992424bd87714a29bcd4c58940e05ded) by korkigames (https://sketchfab.com/korkigames) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

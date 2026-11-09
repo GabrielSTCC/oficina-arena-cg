@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=OCAM
+GenericName=Oficina Cosy da Arena de Mineração
+Comment=Oficina cosy da arena de mineração — Computação Gráfica
+Exec="/home/gabriel/Documents/Faculdade/Computação Grafica/Trabalho/oficina-arena/launch-oficina-arena.sh"
+Path=/home/gabriel/Documents/Faculdade/Computação Grafica/Trabalho/oficina-arena
+Icon=oficina-arena
+Terminal=false
+Categories=Game;Education;
+Keywords=OpenGL;robô;oficina;arena;OCAM;computação gráfica;
+StartupNotify=true
+StartupWMClass=oficina-arena

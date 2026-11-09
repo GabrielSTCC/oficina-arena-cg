@@ -1,4 +1,4 @@
-"""Primitivas low-poly (caixa) usadas como placeholder e para o galpão."""
+"""Primitivas low-poly (caixa, piso, decal, parede interna) para o galpão e placeholders."""
 
 from __future__ import annotations
 
@@ -7,24 +7,24 @@ import numpy as np
 from gfx.mesh import Mesh
 
 
-def make_box(sx: float, sy: float, sz: float, *, uv_scale: float = 1.0) -> Mesh:
-    """Caixa centrada em XZ, base em y=0, topo em y=sy."""
+def make_box(sx: float, sy: float, sz: float, *, uv_scale: float = 1.0, y0: float = 0.0) -> Mesh:
+    """Caixa centrada em XZ, base em y=y0, topo em y=y0+sy."""
     hx, hz = sx * 0.5, sz * 0.5
-    # UV proporcional ao tamanho da face (tile em paredes longas)
+    y1 = y0 + sy
     u_x, u_z, u_y = sx * uv_scale, sz * uv_scale, sy * uv_scale
     faces = [
         # +Y
-        ([(-hx, sy, -hz), (hx, sy, -hz), (hx, sy, hz), (-hx, sy, hz)], (0, 1, 0), [(0, 0), (u_x, 0), (u_x, u_z), (0, u_z)]),
+        ([(-hx, y1, -hz), (hx, y1, -hz), (hx, y1, hz), (-hx, y1, hz)], (0, 1, 0), [(0, 0), (u_x, 0), (u_x, u_z), (0, u_z)]),
         # -Y
-        ([(-hx, 0, hz), (hx, 0, hz), (hx, 0, -hz), (-hx, 0, -hz)], (0, -1, 0), [(0, 0), (u_x, 0), (u_x, u_z), (0, u_z)]),
+        ([(-hx, y0, hz), (hx, y0, hz), (hx, y0, -hz), (-hx, y0, -hz)], (0, -1, 0), [(0, 0), (u_x, 0), (u_x, u_z), (0, u_z)]),
         # +Z
-        ([(-hx, 0, hz), (-hx, sy, hz), (hx, sy, hz), (hx, 0, hz)], (0, 0, 1), [(0, 0), (0, u_y), (u_x, u_y), (u_x, 0)]),
+        ([(-hx, y0, hz), (-hx, y1, hz), (hx, y1, hz), (hx, y0, hz)], (0, 0, 1), [(0, 0), (0, u_y), (u_x, u_y), (u_x, 0)]),
         # -Z
-        ([(hx, 0, -hz), (hx, sy, -hz), (-hx, sy, -hz), (-hx, 0, -hz)], (0, 0, -1), [(0, 0), (0, u_y), (u_x, u_y), (u_x, 0)]),
+        ([(hx, y0, -hz), (hx, y1, -hz), (-hx, y1, -hz), (-hx, y0, -hz)], (0, 0, -1), [(0, 0), (0, u_y), (u_x, u_y), (u_x, 0)]),
         # +X
-        ([(hx, 0, hz), (hx, sy, hz), (hx, sy, -hz), (hx, 0, -hz)], (1, 0, 0), [(0, 0), (0, u_y), (u_z, u_y), (u_z, 0)]),
+        ([(hx, y0, hz), (hx, y1, hz), (hx, y1, -hz), (hx, y0, -hz)], (1, 0, 0), [(0, 0), (0, u_y), (u_z, u_y), (u_z, 0)]),
         # -X
-        ([(-hx, 0, -hz), (-hx, sy, -hz), (-hx, sy, hz), (-hx, 0, hz)], (-1, 0, 0), [(0, 0), (0, u_y), (u_z, u_y), (u_z, 0)]),
+        ([(-hx, y0, -hz), (-hx, y1, -hz), (-hx, y1, hz), (-hx, y0, hz)], (-1, 0, 0), [(0, 0), (0, u_y), (u_z, u_y), (u_z, 0)]),
     ]
     verts: list[float] = []
     inds: list[int] = []
@@ -42,15 +42,57 @@ def make_floor(
     y: float = 0.0,
     *,
     uv_repeat: tuple[float, float] = (1.0, 1.0),
+    normal_up: bool = True,
 ) -> Mesh:
     hw, hd = width * 0.5, depth * 0.5
     ru, rv = uv_repeat
+    ny = 1.0 if normal_up else -1.0
+    if normal_up:
+        # CCW visto de cima (+Y)
+        verts = np.asarray(
+            [
+                -hw, y, -hd, 0, ny, 0, 0, 0,
+                -hw, y,  hd, 0, ny, 0, 0, rv,
+                 hw, y,  hd, 0, ny, 0, ru, rv,
+                 hw, y, -hd, 0, ny, 0, ru, 0,
+            ],
+            np.float32,
+        )
+    else:
+        # CCW visto de baixo (-Y) — teto do hangar com backface culling
+        verts = np.asarray(
+            [
+                -hw, y, -hd, 0, ny, 0, 0, 0,
+                 hw, y, -hd, 0, ny, 0, ru, 0,
+                 hw, y,  hd, 0, ny, 0, ru, rv,
+                -hw, y,  hd, 0, ny, 0, 0, rv,
+            ],
+            np.float32,
+        )
+    inds = np.asarray([0, 1, 2, 0, 2, 3], np.uint32)
+    return Mesh(verts, inds)
+
+
+def make_decal_quad(size: float = 0.95, y: float = 0.006) -> Mesh:
+    """Quad horizontal em y ligeiramente acima do piso, UV [0,1]²."""
+    return make_floor(size, size, y=y, uv_repeat=(1.0, 1.0), normal_up=True)
+
+
+def make_wall_quad(
+    width: float,
+    height: float,
+    *,
+    uv_repeat: tuple[float, float] = (1.0, 1.0),
+) -> Mesh:
+    """Painel vertical no plano XY (Z=0), base em Y=0, normal apontando para +Z (CCW visto de +Z)."""
+    hw = width * 0.5
+    ru, rv = uv_repeat
     verts = np.asarray(
         [
-            -hw, y, -hd, 0, 1, 0, 0, 0,
-            hw, y, -hd, 0, 1, 0, ru, 0,
-            hw, y, hd, 0, 1, 0, ru, rv,
-            -hw, y, hd, 0, 1, 0, 0, rv,
+            -hw, 0.0,    0.0, 0, 0, 1, 0.0, 0.0,
+             hw, 0.0,    0.0, 0, 0, 1, ru,  0.0,
+             hw, height, 0.0, 0, 0, 1, ru,  rv,
+            -hw, height, 0.0, 0, 0, 1, 0.0, rv,
         ],
         np.float32,
     )
