@@ -120,7 +120,7 @@ Arquivo: `world/ia/navegacao.py`
 
 **Gap:** minérios colocados pelo usuário viram ouro genérico (valor 50) no sync.
 
-Contrato do repositório (`AGENTS.md`): **não reescrever Minimax/A***; melhorar via ponte, HUD, placement e constantes.
+Decisão de escopo do projeto: **não reescrever Minimax/A*** do PP01; evoluir via ponte cena↔partida, HUD, placement e constantes.
 
 ---
 

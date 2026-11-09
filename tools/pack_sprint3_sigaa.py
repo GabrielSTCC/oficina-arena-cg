@@ -13,7 +13,7 @@ FULL = "oficina-arena-sprint3"
 LIGHT = "oficina-arena-sprint3-codigo-docs"
 THRESHOLD_MB = 95
 SKIP_DIRS = {".venv", ".git", ".cursor", "dist", "__pycache__"}
-SKIP_FILES = {"_gen_pdfs_equipe.py", "pack_sprint3_sigaa.sh", "pack_sprint3_sigaa.py"}
+SKIP_FILES = {"_gen_pdfs_equipe.py", "pack_sprint3_sigaa.sh", "pack_sprint3_sigaa.py", "AGENTS.md"}
 
 
 def should_skip(rel: Path, *, skip_assets: bool) -> bool:
